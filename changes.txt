@@ -1,3 +1,6 @@
+ver 1.0.5,  Feb 4, 2019
+ upgraded code from drop-reload to incremental-update architecture
+
 ver 1.0.4,  Jan 28, 2019
  upgraded build.gradle
 
