@@ -6,7 +6,7 @@ import edu.mcw.rgd.datamodel.pheno.Experiment;
 import edu.mcw.rgd.datamodel.pheno.Record;
 import edu.mcw.rgd.datamodel.pheno.Study;
 import edu.mcw.rgd.process.Utils;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,12 +71,11 @@ public class FullRecordIndex {
 
             try {
                 List<FullRecord> fullRecordsInRgd = dao.getFullRecordsForStudy(s.getId());
+                Set<FullRecord> fullRecordsIncoming = new HashSet<FullRecord>();
 
                 List<Experiment> experiments = dao.getExperiments(s.getId());
 
                 for (Experiment e: experiments) {
-
-                    Set<FullRecord> fullRecordsIncoming = new HashSet<FullRecord>();
 
                     List<Record> records = dao.getRecords(e.getId());
 
@@ -104,7 +103,6 @@ public class FullRecordIndex {
                             addIncomingRecord(r.getId(), t.getAccId(), r.getSample().getStrainAccId(), s.getId(), s.getName(), e.getId(), e.getName(), fullRecordsIncoming);
                         }
 
-
                         List<Condition> conditions = r.getConditions();
                         for (Condition cond : conditions) {
                             addIncomingRecord(r.getId(), cond.getOntologyId(), cond.getOntologyId(), s.getId(), s.getName(), e.getId(), e.getName(), fullRecordsIncoming);
@@ -114,36 +112,33 @@ public class FullRecordIndex {
                             }
                         }
                     }
-
-                    List<FullRecord> expRecordsInRgd = getRecordsForExperiment(e.getId(), fullRecordsInRgd);
-
-                    if( !(fullRecordsIncoming.isEmpty() && expRecordsInRgd.isEmpty()) ) {
-
-                        rowsIncoming.addAndGet(fullRecordsIncoming.size());
-                        for( FullRecord r: fullRecordsIncoming ) {
-                            logIncoming.debug(r.dump("|"));
-                        }
-
-                        Collection<FullRecord> fullRecordsUpToDate = CollectionUtils.intersection(expRecordsInRgd, fullRecordsIncoming);
-                        if( !fullRecordsUpToDate.isEmpty() ) {
-                            rowsUpToDate.addAndGet(fullRecordsUpToDate.size());
-                            dao.refreshLastUpdateDate(fullRecordsUpToDate);
-                        }
-
-                        Collection<FullRecord> fullRecordsForInsert = CollectionUtils.subtract(fullRecordsIncoming, expRecordsInRgd);
-                        if( !fullRecordsForInsert.isEmpty() ) {
-                            rowsInserted.addAndGet(fullRecordsForInsert.size());
-                            dao.insertRecords(fullRecordsForInsert);
-                        }
-
-                        Collection<FullRecord> fullRecordsForDelete = CollectionUtils.subtract(expRecordsInRgd, fullRecordsIncoming);
-                        if( !fullRecordsForDelete.isEmpty() ) {
-                            rowsDeleted.addAndGet(fullRecordsForDelete.size());
-                            dao.deleteRecords(fullRecordsForDelete);
-                        }
-                    }
                 }
 
+                if( !(fullRecordsIncoming.isEmpty() && fullRecordsInRgd.isEmpty()) ) {
+
+                    rowsIncoming.addAndGet(fullRecordsIncoming.size());
+                    for( FullRecord r: fullRecordsIncoming ) {
+                        logIncoming.debug(r.dump("|"));
+                    }
+
+                    Collection<FullRecord> fullRecordsUpToDate = CollectionUtils.intersection(fullRecordsInRgd, fullRecordsIncoming);
+                    if( !fullRecordsUpToDate.isEmpty() ) {
+                        rowsUpToDate.addAndGet(fullRecordsUpToDate.size());
+                        dao.refreshLastUpdateDate(fullRecordsUpToDate);
+                    }
+
+                    Collection<FullRecord> fullRecordsForInsert = CollectionUtils.subtract(fullRecordsIncoming, fullRecordsInRgd);
+                    if( !fullRecordsForInsert.isEmpty() ) {
+                        rowsInserted.addAndGet(fullRecordsForInsert.size());
+                        dao.insertRecords(fullRecordsForInsert);
+                    }
+
+                    Collection<FullRecord> fullRecordsForDelete = CollectionUtils.subtract(fullRecordsInRgd, fullRecordsIncoming);
+                    if( !fullRecordsForDelete.isEmpty() ) {
+                        rowsDeleted.addAndGet(fullRecordsForDelete.size());
+                        dao.deleteRecords(fullRecordsForDelete);
+                    }
+                }
             } catch(Exception e) {
                 // exceptions not allowed within lambdas -- wrapping them as RuntimeExceptions to suppress lambda limitations
                 throw new RuntimeException(e);
@@ -195,17 +190,6 @@ public class FullRecordIndex {
         fullRecords.add(r);
     }
 
-    List<FullRecord> getRecordsForExperiment(int experimentId, List<FullRecord> list) {
-
-        List<FullRecord> result = new ArrayList<>();
-        for( FullRecord r: list ) {
-            if( r.getExperimentId()==experimentId ) {
-                result.add(r);
-            }
-        }
-        return result;
-    }
-
     public void setVersion(String version) {
         this.version = version;
     }
@@ -214,4 +198,3 @@ public class FullRecordIndex {
         return version;
     }
 }
-
