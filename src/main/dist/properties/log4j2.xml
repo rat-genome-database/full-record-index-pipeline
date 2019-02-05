@@ -10,6 +10,9 @@
                 <TimeBasedTriggeringPolicy interval="1"/>
             </Policies>
         </RollingFile>
+        <File name="incoming" append="false" fileName="logs/incoming.log">
+            <PatternLayout pattern="%m%n"/>
+        </File>
         <RollingFile name="inserted" append="true" fileName="logs/inserted.log" filePattern="logs/inserted.log.%d{yyyy-MM}">
             <PatternLayout pattern="[%d] - %m%n"/>
             <Policies>
@@ -38,11 +41,14 @@
             <AppenderRef ref="core"/>
             <AppenderRef ref="Console" level="info"/>
         </Logger>
+        <Logger name="incoming" level="debug" additivity="false">
+            <AppenderRef ref="incoming"/>
+        </Logger>
         <Logger name="inserted" level="debug" additivity="false">
             <AppenderRef ref="inserted"/>
             <AppenderRef ref="Console" level="info"/>
         </Logger>
-        <Logger name="insertRefRgdId" level="debug" additivity="false">
+        <Logger name="deleted" level="debug" additivity="false">
             <AppenderRef ref="deleted"/>
             <AppenderRef ref="Console" level="info"/>
         </Logger>

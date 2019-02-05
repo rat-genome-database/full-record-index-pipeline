@@ -4,6 +4,8 @@ import edu.mcw.rgd.datamodel.Dumpable;
 import edu.mcw.rgd.process.Dumper;
 import edu.mcw.rgd.process.Utils;
 
+import java.util.Date;
+
 /// represents a row in FULL_RECORD_INDEX table
 public class FullRecord implements Dumpable {
 
@@ -16,6 +18,7 @@ public class FullRecord implements Dumpable {
     private String termAcc;
     private String primaryTermAcc;
     private String aspect;
+    private Date lastUpdateDate;
 
     private String rowid;
 
@@ -113,6 +116,14 @@ public class FullRecord implements Dumpable {
         this.aspect = aspect;
     }
 
+    public Date getLastUpdateDate() {
+        return lastUpdateDate;
+    }
+
+    public void setLastUpdateDate(Date lastUpdateDate) {
+        this.lastUpdateDate = lastUpdateDate;
+    }
+
     public String getRowid() {
         return rowid;
     }
@@ -136,6 +147,7 @@ public class FullRecord implements Dumpable {
             .put("TERM_ACC", getTermAcc())
             .put("PRIMARY_TERM_ACC", getPrimaryTermAcc())
             .put("ASPECT", getAspect())
+            .put("LAST_UPDATE", getLastUpdateDate())
             .dump();
     }
 }

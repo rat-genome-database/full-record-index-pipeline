@@ -23,6 +23,7 @@ public class FullRecordIndexQuery extends MappingSqlQuery {
         r.setStudyId(rs.getInt("study_id"));
         r.setStudyName(rs.getString("study_name"));
         r.setTermAcc(rs.getString("term_acc"));
+        r.setLastUpdateDate(rs.getTimestamp("last_update_date"));
         return r;
     }
 }

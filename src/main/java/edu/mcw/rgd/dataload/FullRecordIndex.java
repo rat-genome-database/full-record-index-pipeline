@@ -11,136 +11,170 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Created by IntelliJ IDEA.
- * User: jdepons
- * Date: 4/26/12
- * Pipeline job to index experiment record table
+ * @author jdepons
+ * @since 4/26/12
+ * index experiment record table
  */
 public class FullRecordIndex {
 
     Logger log = LogManager.getLogger("core");
+    Logger logIncoming = LogManager.getLogger("incoming");
     FullRecordIndexDao dao = new FullRecordIndexDao();
 
     private String version;
 
     public static void main(String[] args) throws Exception {
 
+        boolean debug = false;
+        for( String arg: args ) {
+           if( arg.contains("debug") ) {
+               debug = true;
+           }
+        }
+
         FullRecordIndex fri = new FullRecordIndex();
         try {
-            fri.runPipeline();
+            fri.runPipeline(debug);
         }catch (Exception e) {
             fri.log.error(e);
             throw e;
         }
     }
 
-    public void runPipeline() throws Exception {
+    public void runPipeline(boolean debug) throws Exception {
 
         Date date0 = new Date();
         long time0 = date0.getTime();
-        log.info("Starting full record index pipeline");
+        log.info("Starting "+getVersion());
+        log.info("   REC_COUNT: "+Utils.formatThousands(dao.getFullRecordCount()));
 
-        int rowsIncoming = 0;
-        int rowsUpToDate = 0;
-        int rowsInserted = 0;
-        int rowsDeleted = 0;
+        AtomicInteger rowsIncoming = new AtomicInteger(0);
+        AtomicInteger rowsUpToDate = new AtomicInteger(0);
+        AtomicInteger rowsInserted = new AtomicInteger(0);
+        AtomicInteger rowsDeleted = new AtomicInteger(0);
+        AtomicInteger i = new AtomicInteger(0);
 
         dao.loadAspectMap();
 
         List<Study> studies = dao.getStudies();
+        Collections.shuffle(studies);
 
-        int i = 0;
-        for (Study s: studies) {
-            System.out.println((++i)+"/"+studies.size());
+        studies.parallelStream().forEach( s -> {
 
-            List<FullRecord> fullRecordsInRgd = dao.getFullRecordsForStudy(s.getId());
-            List<FullRecord> fullRecordsIncoming = new ArrayList<FullRecord>();
+            if( debug ) {
+                i.incrementAndGet();
+                System.out.println(i+"/"+studies.size()+"  INS="+rowsInserted+",  DEL="+rowsDeleted+",  MATCH="+rowsUpToDate);
+            }
 
-            List<Experiment> experiments = dao.getExperiments(s.getId());
+            try {
+                List<FullRecord> fullRecordsInRgd = dao.getFullRecordsForStudy(s.getId());
 
-            for (Experiment e: experiments) {
-                List<Record> records = dao.getRecords(e.getId());
+                List<Experiment> experiments = dao.getExperiments(s.getId());
 
-                for (Record r: records) {
+                for (Experiment e: experiments) {
 
-                    if (r.getCurationStatus() != 40) {
-                        continue;
+                    Set<FullRecord> fullRecordsIncoming = new HashSet<FullRecord>();
+
+                    List<Record> records = dao.getRecords(e.getId());
+
+                    for (Record r : records) {
+
+                        if (r.getCurationStatus() != 40) {
+                            continue;
+                        }
+
+                        addIncomingRecord(r.getId(), r.getMeasurementMethod().getAccId(), r.getMeasurementMethod().getAccId(), s.getId(), s.getName(), e.getId(), e.getName(), fullRecordsIncoming);
+                        List<Term> parents = dao.getAllActiveTermAncestors(r.getMeasurementMethod().getAccId());
+                        for (Term t : parents) {
+                            addIncomingRecord(r.getId(), t.getAccId(), r.getMeasurementMethod().getAccId(), s.getId(), s.getName(), e.getId(), e.getName(), fullRecordsIncoming);
+                        }
+
+                        addIncomingRecord(r.getId(), r.getClinicalMeasurement().getAccId(), r.getClinicalMeasurement().getAccId(), s.getId(), s.getName(), e.getId(), e.getName(), fullRecordsIncoming);
+                        parents = dao.getAllActiveTermAncestors(r.getClinicalMeasurement().getAccId());
+                        for (Term t : parents) {
+                            addIncomingRecord(r.getId(), t.getAccId(), r.getClinicalMeasurement().getAccId(), s.getId(), s.getName(), e.getId(), e.getName(), fullRecordsIncoming);
+                        }
+
+                        addIncomingRecord(r.getId(), r.getSample().getStrainAccId(), r.getSample().getStrainAccId(), s.getId(), s.getName(), e.getId(), e.getName(), fullRecordsIncoming);
+                        parents = dao.getAllActiveTermAncestors(r.getSample().getStrainAccId());
+                        for (Term t : parents) {
+                            addIncomingRecord(r.getId(), t.getAccId(), r.getSample().getStrainAccId(), s.getId(), s.getName(), e.getId(), e.getName(), fullRecordsIncoming);
+                        }
+
+
+                        List<Condition> conditions = r.getConditions();
+                        for (Condition cond : conditions) {
+                            addIncomingRecord(r.getId(), cond.getOntologyId(), cond.getOntologyId(), s.getId(), s.getName(), e.getId(), e.getName(), fullRecordsIncoming);
+                            parents = dao.getAllActiveTermAncestors(cond.getOntologyId());
+                            for (Term t : parents) {
+                                addIncomingRecord(r.getId(), t.getAccId(), cond.getOntologyId(), s.getId(), s.getName(), e.getId(), e.getName(), fullRecordsIncoming);
+                            }
+                        }
                     }
 
-                    addIncomingRecord(r.getId(), r.getMeasurementMethod().getAccId(),r.getMeasurementMethod().getAccId(), s.getId(), s.getName(),e.getId(),e.getName(), fullRecordsIncoming);
-                    List<Term> parents = dao.getAllActiveTermAncestors(r.getMeasurementMethod().getAccId());
-                    for(Term t: parents) {
-                        addIncomingRecord(r.getId(),t.getAccId(),r.getMeasurementMethod().getAccId(), s.getId(), s.getName(),e.getId(),e.getName(), fullRecordsIncoming);
-                    }
+                    List<FullRecord> expRecordsInRgd = getRecordsForExperiment(e.getId(), fullRecordsInRgd);
 
-                    addIncomingRecord(r.getId(), r.getClinicalMeasurement().getAccId(),r.getClinicalMeasurement().getAccId(), s.getId(), s.getName(),e.getId(),e.getName(), fullRecordsIncoming);
-                    parents = dao.getAllActiveTermAncestors(r.getClinicalMeasurement().getAccId());
-                    for(Term t: parents) {
-                        addIncomingRecord(r.getId(),t.getAccId(), r.getClinicalMeasurement().getAccId(), s.getId(), s.getName(),e.getId(),e.getName(), fullRecordsIncoming);
-                    }
+                    if( !(fullRecordsIncoming.isEmpty() && expRecordsInRgd.isEmpty()) ) {
 
-                    addIncomingRecord(r.getId(),r.getSample().getStrainAccId(), r.getSample().getStrainAccId(), s.getId(), s.getName(),e.getId(),e.getName(), fullRecordsIncoming);
-                    parents = dao.getAllActiveTermAncestors(r.getSample().getStrainAccId());
-                    for(Term t: parents) {
-                        addIncomingRecord(r.getId(),t.getAccId(),r.getSample().getStrainAccId(), s.getId(), s.getName(),e.getId(),e.getName(), fullRecordsIncoming);
-                    }
+                        rowsIncoming.addAndGet(fullRecordsIncoming.size());
+                        for( FullRecord r: fullRecordsIncoming ) {
+                            logIncoming.debug(r.dump("|"));
+                        }
 
+                        Collection<FullRecord> fullRecordsUpToDate = CollectionUtils.intersection(expRecordsInRgd, fullRecordsIncoming);
+                        if( !fullRecordsUpToDate.isEmpty() ) {
+                            rowsUpToDate.addAndGet(fullRecordsUpToDate.size());
+                            dao.refreshLastUpdateDate(fullRecordsUpToDate);
+                        }
 
-                    List<Condition> conditions = r.getConditions();
-                    for (Condition cond: conditions) {
-                        addIncomingRecord(r.getId(),cond.getOntologyId(), cond.getOntologyId(), s.getId(), s.getName(),e.getId(),e.getName(), fullRecordsIncoming);
-                        parents = dao.getAllActiveTermAncestors(cond.getOntologyId());
-                        for(Term t: parents) {
-                            addIncomingRecord(r.getId(),t.getAccId(),cond.getOntologyId(), s.getId(), s.getName(),e.getId(),e.getName(), fullRecordsIncoming);
+                        Collection<FullRecord> fullRecordsForInsert = CollectionUtils.subtract(fullRecordsIncoming, expRecordsInRgd);
+                        if( !fullRecordsForInsert.isEmpty() ) {
+                            rowsInserted.addAndGet(fullRecordsForInsert.size());
+                            dao.insertRecords(fullRecordsForInsert);
+                        }
+
+                        Collection<FullRecord> fullRecordsForDelete = CollectionUtils.subtract(expRecordsInRgd, fullRecordsIncoming);
+                        if( !fullRecordsForDelete.isEmpty() ) {
+                            rowsDeleted.addAndGet(fullRecordsForDelete.size());
+                            dao.deleteRecords(fullRecordsForDelete);
                         }
                     }
                 }
+
+            } catch(Exception e) {
+                // exceptions not allowed within lambdas -- wrapping them as RuntimeExceptions to suppress lambda limitations
+                throw new RuntimeException(e);
             }
 
-            if( fullRecordsIncoming.isEmpty() && fullRecordsInRgd.isEmpty() ) {
-                continue;
-            }
+        });
 
-            rowsIncoming += fullRecordsIncoming.size();
+        int staleRowsDeleted = dao.deleteStaleRecords(date0, rowsIncoming.get(), log);
 
-            Collection<FullRecord> fullRecordsUpToDate = CollectionUtils.intersection(fullRecordsInRgd, fullRecordsIncoming);
-            rowsUpToDate += fullRecordsUpToDate.size();
-            dao.refreshLastUpdateDate(fullRecordsUpToDate, date0);
-
-            Collection<FullRecord> fullRecordsForInsert = CollectionUtils.subtract(fullRecordsIncoming, fullRecordsInRgd);
-            rowsInserted += fullRecordsForInsert.size();
-            dao.insertRecords(fullRecordsForInsert);
-
-            Collection<FullRecord> fullRecordsForDelete = CollectionUtils.subtract(fullRecordsInRgd, fullRecordsIncoming);
-            rowsDeleted += fullRecordsForDelete.size();
-            dao.deleteRecords(fullRecordsForDelete);
-        }
-
-        int staleRowsDeleted = dao.deleteStaleRecords(date0);
-
-        if( rowsIncoming!=0 ) {
+        if( rowsIncoming.get()!=0 ) {
             log.info("  incoming rows:   " + Utils.formatThousands(rowsIncoming));
         }
-        if( rowsUpToDate!=0 ) {
+        if( rowsUpToDate.get()!=0 ) {
             log.info("  up-to-date rows: " + Utils.formatThousands(rowsUpToDate));
         }
-        if( rowsInserted!=0 ) {
+        if( rowsInserted.get()!=0 ) {
             log.info("  inserted rows:   " + Utils.formatThousands(rowsInserted));
         }
-        if( rowsDeleted!=0 ) {
+        if( rowsDeleted.get()!=0 ) {
             log.info("  deleted rows:    " + Utils.formatThousands(rowsDeleted));
         }
         if( staleRowsDeleted!=0 ) {
             log.info("  deleted stale rows: " + Utils.formatThousands(staleRowsDeleted));
         }
+        log.info("   REC_COUNT: "+Utils.formatThousands(dao.getFullRecordCount()));
 
         log.info("=== OK === time elapsed " + Utils.formatElapsedTime(time0, System.currentTimeMillis()));
     }
 
     void addIncomingRecord(int recordId, String accId, String primaryAccId, int studyId, String studyName,
-                           int experimentId, String experimentName, List<FullRecord> fullRecords) {
+                           int experimentId, String experimentName, Collection<FullRecord> fullRecords) {
 
         String aspect = dao.getAspect(accId);
         if( aspect==null ) {
@@ -159,6 +193,17 @@ public class FullRecordIndex {
         r.setAspect(aspect);
 
         fullRecords.add(r);
+    }
+
+    List<FullRecord> getRecordsForExperiment(int experimentId, List<FullRecord> list) {
+
+        List<FullRecord> result = new ArrayList<>();
+        for( FullRecord r: list ) {
+            if( r.getExperimentId()==experimentId ) {
+                result.add(r);
+            }
+        }
+        return result;
     }
 
     public void setVersion(String version) {

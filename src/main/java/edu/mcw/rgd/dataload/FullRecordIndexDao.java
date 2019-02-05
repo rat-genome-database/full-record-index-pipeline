@@ -72,14 +72,14 @@ public class FullRecordIndexDao {
         return records;
     }
 
-    public int refreshLastUpdateDate( Collection<FullRecord> records, Date refreshDate ) throws Exception {
+    public int refreshLastUpdateDate( Collection<FullRecord> records ) throws Exception {
 
-        BatchSqlUpdate su = new BatchSqlUpdate(pdao.getDataSource(), "UPDATE full_record_index SET last_update_date=? WHERE ROWID=?",
-                new int[]{Types.TIMESTAMP, Types.VARCHAR});
+        BatchSqlUpdate su = new BatchSqlUpdate(pdao.getDataSource(), "UPDATE full_record_index SET last_update_date=SYSDATE WHERE ROWID=?",
+                new int[]{Types.VARCHAR});
         su.compile();
 
         for( FullRecord r: records ) {
-            su.update(refreshDate, r.getRowid());
+            su.update(r.getRowid());
         }
         return pdao.executeBatch(su);
     }
@@ -88,11 +88,18 @@ public class FullRecordIndexDao {
         String sql = "INSERT INTO full_record_index (experiment_record_id, term_acc, primary_term_acc, aspect, study_id, "+
                 "study_name, experiment_id, experiment_name, last_update_date) VALUES (?,?,?,?,?,?,?,?,SYSDATE)";
 
+        BatchSqlUpdate su = new BatchSqlUpdate(pdao.getDataSource(), sql,
+                new int[]{Types.INTEGER, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.INTEGER
+                        , Types.VARCHAR, Types.INTEGER, Types.VARCHAR});
+        su.compile();
+
         for( FullRecord r: records ) {
             logInserted.debug(r.dump("|"));
             pdao.update(sql, r.getExperimentRecordId(), r.getTermAcc(), r.getPrimaryTermAcc(), r.getAspect(),
                     r.getStudyId(), r.getStudyName(), r.getExperimentId(), r.getExperimentName());
         }
+
+        pdao.executeBatch(su);
     }
 
     public int deleteRecords( Collection<FullRecord> records ) throws Exception {
@@ -110,13 +117,25 @@ public class FullRecordIndexDao {
         return records.size();
     }
 
-    public int deleteStaleRecords( Date cutoffDate ) throws Exception {
+    public int deleteStaleRecords( Date cutoffDate, int incomingRowsCount, Logger log ) throws Exception {
 
         String sql = "SELECT ROWID,i.* FROM full_record_index i WHERE last_update_date < ?";
         FullRecordIndexQuery q = new FullRecordIndexQuery(pdao.getDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.TIMESTAMP));
         List<FullRecord> staleRecords = q.execute(cutoffDate);
 
+        // cannot delete more than 10% of incoming rows
+        int deleteThreshold = incomingRowsCount / 10;
+        if( staleRecords.size() > deleteThreshold ) {
+            log.warn("WARN: deletion of stale records aborted");
+            log.warn("      more than 10% of incoming records were about to be deleted");
+            log.warn("      (10% = "+deleteThreshold+",   stale-record-count = "+staleRecords.size()+")");
+            return 0;
+        }
         return deleteRecords(staleRecords);
+    }
+
+    public int getFullRecordCount() throws Exception {
+        return pdao.getCount("SELECT COUNT(0) FROM full_record_index");
     }
 }
