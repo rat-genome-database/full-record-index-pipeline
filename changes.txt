@@ -1,3 +1,6 @@
+May 10, 2020
+  updated jar dependencies
+
 ver 1.0.6,  Feb 5, 2019
  moved to commons-collections4, because of performance problems of CollectionUtils.subtract
  moved to commons-dbcp2
