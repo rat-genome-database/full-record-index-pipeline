@@ -9,6 +9,9 @@ import edu.mcw.rgd.process.Utils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.springframework.core.io.FileSystemResource;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,28 +31,25 @@ public class FullRecordIndex {
 
     public static void main(String[] args) throws Exception {
 
-        boolean debug = false;
-        for( String arg: args ) {
-           if( arg.contains("debug") ) {
-               debug = true;
-           }
-        }
+        DefaultListableBeanFactory bf = new DefaultListableBeanFactory();
+        new XmlBeanDefinitionReader(bf).loadBeanDefinitions(new FileSystemResource("properties/AppConfigure.xml"));
 
-        FullRecordIndex fri = new FullRecordIndex();
+        FullRecordIndex fri  = (FullRecordIndex) (bf.getBean("manager"));
+
         try {
-            fri.runPipeline(debug);
+            fri.runPipeline();
         }catch (Exception e) {
             fri.log.error(e);
             throw e;
         }
     }
 
-    public void runPipeline(boolean debug) throws Exception {
+    public void runPipeline() throws Exception {
 
         Date date0 = new Date();
         long time0 = date0.getTime();
         log.info("Starting "+getVersion());
-        log.info("   REC_COUNT: "+Utils.formatThousands(dao.getFullRecordCount()));
+        log.info("   INITIAL_REC_COUNT: "+Utils.formatThousands(dao.getFullRecordCount()));
 
         AtomicInteger rowsIncoming = new AtomicInteger(0);
         AtomicInteger rowsUpToDate = new AtomicInteger(0);
@@ -64,10 +64,8 @@ public class FullRecordIndex {
 
         studies.parallelStream().forEach( s -> {
 
-            if( debug ) {
-                i.incrementAndGet();
-                System.out.println(i+"/"+studies.size()+"  INS="+rowsInserted+",  DEL="+rowsDeleted+",  MATCH="+rowsUpToDate);
-            }
+            i.incrementAndGet();
+            log.debug(i+"/"+studies.size()+"  INS="+rowsInserted+",  DEL="+rowsDeleted+",  MATCH="+rowsUpToDate);
 
             try {
                 List<FullRecord> fullRecordsInRgd = dao.getFullRecordsForStudy(s.getId());
@@ -149,21 +147,21 @@ public class FullRecordIndex {
         int staleRowsDeleted = dao.deleteStaleRecords(date0, rowsIncoming.get(), log);
 
         if( rowsIncoming.get()!=0 ) {
-            log.info("  incoming rows:   " + Utils.formatThousands(rowsIncoming));
+            log.info("   incoming rows:   " + Utils.formatThousands(rowsIncoming));
         }
         if( rowsUpToDate.get()!=0 ) {
-            log.info("  up-to-date rows: " + Utils.formatThousands(rowsUpToDate));
+            log.info("   up-to-date rows: " + Utils.formatThousands(rowsUpToDate));
         }
         if( rowsInserted.get()!=0 ) {
-            log.info("  inserted rows:   " + Utils.formatThousands(rowsInserted));
+            log.info("   inserted rows:   " + Utils.formatThousands(rowsInserted));
         }
         if( rowsDeleted.get()!=0 ) {
-            log.info("  deleted rows:    " + Utils.formatThousands(rowsDeleted));
+            log.info("   deleted rows:    " + Utils.formatThousands(rowsDeleted));
         }
         if( staleRowsDeleted!=0 ) {
-            log.info("  deleted stale rows: " + Utils.formatThousands(staleRowsDeleted));
+            log.info("   deleted stale rows: " + Utils.formatThousands(staleRowsDeleted));
         }
-        log.info("   REC_COUNT: "+Utils.formatThousands(dao.getFullRecordCount()));
+        log.info("   FINAL_REC_COUNT: "+Utils.formatThousands(dao.getFullRecordCount()));
 
         log.info("=== OK === time elapsed " + Utils.formatElapsedTime(time0, System.currentTimeMillis()));
     }
@@ -173,7 +171,7 @@ public class FullRecordIndex {
 
         String aspect = dao.getAspect(accId);
         if( aspect==null ) {
-            log.warn(" NULL aspect for term_acc:"+accId+", study_id:"+studyId+", exp_id:"+experimentId);
+            log.warn("### NULL aspect for term_acc:"+accId+", study_id:"+studyId+", exp_id:"+experimentId);
             return;
         }
 
