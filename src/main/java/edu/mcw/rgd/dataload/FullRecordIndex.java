@@ -171,7 +171,7 @@ public class FullRecordIndex {
 
         String aspect = dao.getAspect(accId);
         if( aspect==null ) {
-            log.warn("### NULL aspect for term_acc:"+accId+", study_id:"+studyId+", exp_id:"+experimentId);
+            log.warn("### NULL aspect for term_acc:"+accId+", study_id:"+studyId+", exp_id:"+experimentId+", exp_rec_id:"+recordId);
             return;
         }
 
