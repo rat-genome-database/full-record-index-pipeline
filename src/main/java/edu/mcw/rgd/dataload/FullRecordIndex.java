@@ -39,7 +39,7 @@ public class FullRecordIndex {
         try {
             fri.runPipeline();
         }catch (Exception e) {
-            fri.log.error(e);
+            Utils.printStackTrace(e, fri.log);
             throw e;
         }
     }
