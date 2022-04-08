@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# shell script to run fullRecordIndex pipeline
+# shell script to run full-record-index-pipeline
 . /etc/profile
 
-APPNAME=fullRecordIndex
+APPNAME=full-record-index-pipeline
 APPDIR=/home/rgddata/pipelines/$APPNAME
 
 cd $APPDIR

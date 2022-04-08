@@ -1,9 +1,9 @@
-# run fullRecordIndex pipeline with commandline parameters
+# run full-record-index-pipeline with commandline parameters
 #    ("$@" passes all cmdline parameters to pipeline program)
 #
 . /etc/profile
 SERVER=`hostname -s | tr '[a-z]' '[A-Z]'`
-APPHOME=/home/rgddata/pipelines/fullRecordIndex
+APPHOME=/home/rgddata/pipelines/full-record-index-pipeline
 
 EMAIL_LIST=mtutaj@mcw.edu
 if [ "$SERVER" == "REED" ]; then
