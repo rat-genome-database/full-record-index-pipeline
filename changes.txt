@@ -1,3 +1,6 @@
+Dec 14, 2022
+  renamed 'master' branch to 'main'
+
 Apr 08, 2022
   renamed distro to 'full-record-index-pipeline'
 

@@ -12,4 +12,4 @@ fi
 
 $APPHOME/run.sh "$@"
 
-mailx -s "[$SERVER] Output from full record index pipeline " $EMAIL_LIST < $APPHOME/logs/summary.log
+mailx -s "[$SERVER] Output from full record index pipeline OK" $EMAIL_LIST < $APPHOME/logs/summary.log
