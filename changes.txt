@@ -1,3 +1,6 @@
+Oct 09, 2023
+  updated jar dependencies
+
 Apr 07, 2023
   improved logging
 
@@ -11,14 +14,10 @@ Jan 06, 2022
   updated log4j to avoid zero day exploit
 
 Mar 05, 2021
-  improved logging
-
 Nov 18, 2020
   improved logging
 
 Sep 25, 2020
-  updated jar dependencies
-
 May 10, 2020
   updated jar dependencies
 
