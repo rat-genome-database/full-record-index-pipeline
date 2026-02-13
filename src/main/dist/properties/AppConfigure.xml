@@ -2,7 +2,7 @@
 
 <beans>
 	<bean id="manager" class="edu.mcw.rgd.dataload.FullRecordIndex">
-        <property name="version" value="full-record-index-pipeline  -- build Nov 10, 2025" />
+        <property name="version" value="full-record-index-pipeline  -- build Feb 13, 2026" />
 	</bean>
 
 </beans>
