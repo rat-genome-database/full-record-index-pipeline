@@ -95,7 +95,7 @@ public class FullRecordIndexDao {
 
         for( FullRecord r: records ) {
             logInserted.debug(r.dump("|"));
-            pdao.update(sql, r.getExperimentRecordId(), r.getTermAcc(), r.getPrimaryTermAcc(), r.getAspect(),
+            su.update(r.getExperimentRecordId(), r.getTermAcc(), r.getPrimaryTermAcc(), r.getAspect(),
                     r.getStudyId(), r.getStudyName(), r.getExperimentId(), r.getExperimentName());
         }
 

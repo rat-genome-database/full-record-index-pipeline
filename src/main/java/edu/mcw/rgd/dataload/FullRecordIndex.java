@@ -5,6 +5,7 @@ import edu.mcw.rgd.datamodel.pheno.Condition;
 import edu.mcw.rgd.datamodel.pheno.Experiment;
 import edu.mcw.rgd.datamodel.pheno.Record;
 import edu.mcw.rgd.datamodel.pheno.Study;
+import edu.mcw.rgd.process.MemoryMonitor;
 import edu.mcw.rgd.process.Utils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
@@ -48,6 +49,10 @@ public class FullRecordIndex {
 
         Date date0 = new Date();
         long time0 = date0.getTime();
+
+        MemoryMonitor memoryMonitor = new MemoryMonitor();
+        memoryMonitor.start();
+
         log.info("Starting "+getVersion());
         log.info("   INITIAL_REC_COUNT: "+Utils.formatThousands(dao.getFullRecordCount()));
 
@@ -163,7 +168,9 @@ public class FullRecordIndex {
         }
         log.info("   FINAL_REC_COUNT: "+Utils.formatThousands(dao.getFullRecordCount()));
 
-        log.info("=== OK === time elapsed " + Utils.formatElapsedTime(time0, System.currentTimeMillis()));
+        memoryMonitor.stop();
+        log.info(memoryMonitor.getSummary());
+        log.info("=== OK === time elapsed " + Utils.formatElapsedTime(time0, System.currentTimeMillis()) + "\n");
     }
 
     void addIncomingRecord(int recordId, String accId, String primaryAccId, int studyId, String studyName,

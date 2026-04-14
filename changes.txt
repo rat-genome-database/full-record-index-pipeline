@@ -1,3 +1,6 @@
+Apr 14, 2026
+  fixed insertRecords to actually batch inserts; added MemoryMonitor; updated README; updated dependencies
+
 Feb 13, 2026
 Nov 10, 2025
 Jul 14, 2025
