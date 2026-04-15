@@ -6,13 +6,14 @@ import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class FullRecordIndexQuery extends MappingSqlQuery {
+public class FullRecordIndexQuery extends MappingSqlQuery<FullRecord> {
 
     public FullRecordIndexQuery(DataSource ds, String query) {
         super(ds, query);
     }
 
-    protected Object mapRow(ResultSet rs, int rowNum) throws SQLException {
+    @Override
+    protected FullRecord mapRow(ResultSet rs, int rowNum) throws SQLException {
         FullRecord r = new FullRecord();
         r.setRowid(rs.getString("rowid"));
         r.setAspect(rs.getString("aspect"));

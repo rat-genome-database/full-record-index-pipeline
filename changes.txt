@@ -1,3 +1,7 @@
+Apr 15, 2026
+  FullRecordIndexQuery: added generic parameter to drop unchecked casts
+  updated dependencies
+
 Apr 14, 2026
   fixed insertRecords to actually batch inserts; added MemoryMonitor; updated README; updated dependencies
 
