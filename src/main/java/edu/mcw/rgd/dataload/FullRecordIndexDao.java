@@ -117,19 +117,19 @@ public class FullRecordIndexDao {
         return records.size();
     }
 
-    public int deleteStaleRecords( Date cutoffDate, int incomingRowsCount, Logger log ) throws Exception {
+    public int deleteStaleRecords( Date cutoffDate, int incomingRowsCount, String thresholdStr, Logger log ) throws Exception {
 
         String sql = "SELECT ROWID,i.* FROM full_record_index i WHERE last_update_date < ?";
         FullRecordIndexQuery q = new FullRecordIndexQuery(pdao.getDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.TIMESTAMP));
         List<FullRecord> staleRecords = q.execute(cutoffDate);
 
-        // cannot delete more than 10% of incoming rows
-        int deleteThreshold = incomingRowsCount / 10;
+        int thresholdPct = Integer.parseInt(thresholdStr.replace("%", "").trim());
+        int deleteThreshold = (thresholdPct * incomingRowsCount) / 100;
         if( staleRecords.size() > deleteThreshold ) {
             log.warn("WARN: deletion of stale records aborted");
-            log.warn("      more than 10% of incoming records were about to be deleted");
-            log.warn("      (10% = "+deleteThreshold+",   stale-record-count = "+staleRecords.size()+")");
+            log.warn("      more than "+thresholdStr+" of incoming records were about to be deleted");
+            log.warn("      ("+thresholdStr+" = "+deleteThreshold+",   stale-record-count = "+staleRecords.size()+")");
             return 0;
         }
         return deleteRecords(staleRecords);

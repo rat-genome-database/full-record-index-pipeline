@@ -1,3 +1,6 @@
+Apr 20, 2026
+  moved stale delete threshold to AppConfigure.xml; updated dependencies
+
 Apr 15, 2026
   FullRecordIndexQuery: added generic parameter to drop unchecked casts
   updated dependencies

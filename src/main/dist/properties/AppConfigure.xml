@@ -2,7 +2,8 @@
 
 <beans>
 	<bean id="manager" class="edu.mcw.rgd.dataload.FullRecordIndex">
-        <property name="version" value="full-record-index-pipeline -- build Apr 15, 2026" />
+        <property name="version" value="full-record-index-pipeline -- build Apr 20, 2026" />
+        <property name="staleDeleteThreshold" value="10%" />
 	</bean>
 
 </beans>

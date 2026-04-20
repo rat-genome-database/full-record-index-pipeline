@@ -29,6 +29,7 @@ public class FullRecordIndex {
     FullRecordIndexDao dao = new FullRecordIndexDao();
 
     private String version;
+    private String staleDeleteThreshold;
 
     public static void main(String[] args) throws Exception {
 
@@ -149,7 +150,7 @@ public class FullRecordIndex {
 
         });
 
-        int staleRowsDeleted = dao.deleteStaleRecords(date0, rowsIncoming.get(), log);
+        int staleRowsDeleted = dao.deleteStaleRecords(date0, rowsIncoming.get(), getStaleDeleteThreshold(), log);
 
         if( rowsIncoming.get()!=0 ) {
             log.info("   incoming rows:   " + Utils.formatThousands(rowsIncoming));
@@ -201,5 +202,13 @@ public class FullRecordIndex {
 
     public String getVersion() {
         return version;
+    }
+
+    public void setStaleDeleteThreshold(String staleDeleteThreshold) {
+        this.staleDeleteThreshold = staleDeleteThreshold;
+    }
+
+    public String getStaleDeleteThreshold() {
+        return staleDeleteThreshold;
     }
 }
