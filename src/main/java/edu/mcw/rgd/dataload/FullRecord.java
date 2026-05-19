@@ -32,10 +32,10 @@ public class FullRecord implements Dumpable {
         if (getStudyId() != record.getStudyId()) return false;
         if (getExperimentId() != record.getExperimentId()) return false;
         if (getExperimentRecordId() != record.getExperimentRecordId()) return false;
-        if (!getStudyName().equals(record.getStudyName())) return false;
-        if (!getExperimentName().equals(record.getExperimentName())) return false;
-        if (!getTermAcc().equals(record.getTermAcc())) return false;
-        if (!getPrimaryTermAcc().equals(record.getPrimaryTermAcc())) return false;
+        if (!Utils.stringsAreEqual(getStudyName(), record.getStudyName())) return false;
+        if (!Utils.stringsAreEqual(getExperimentName(), record.getExperimentName())) return false;
+        if (!Utils.stringsAreEqual(getTermAcc(), record.getTermAcc())) return false;
+        if (!Utils.stringsAreEqual(getPrimaryTermAcc(), record.getPrimaryTermAcc())) return false;
         return Utils.stringsAreEqual(getAspect(), record.getAspect());
     }
 
@@ -44,10 +44,10 @@ public class FullRecord implements Dumpable {
         int result = getStudyId();
         result = 31 * result + getExperimentId();
         result = 31 * result + getExperimentRecordId();
-        result = 31 * result + getStudyName().hashCode();
-        result = 31 * result + getExperimentName().hashCode();
-        result = 31 * result + getTermAcc().hashCode();
-        result = 31 * result + getPrimaryTermAcc().hashCode();
+        result = 31 * result + Utils.defaultString(getStudyName()).hashCode();
+        result = 31 * result + Utils.defaultString(getExperimentName()).hashCode();
+        result = 31 * result + Utils.defaultString(getTermAcc()).hashCode();
+        result = 31 * result + Utils.defaultString(getPrimaryTermAcc()).hashCode();
         result = 31 * result + Utils.defaultString(getAspect()).hashCode();
         return result;
     }

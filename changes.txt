@@ -1,3 +1,6 @@
+May 19, 2026
+  FullRecord.equals/hashCode: null-safe handling of all string fields; updated dependencies
+
 Apr 20, 2026
   moved stale delete threshold to AppConfigure.xml; updated dependencies
 
