@@ -117,19 +117,24 @@ public class FullRecordIndexDao {
         return records.size();
     }
 
-    public int deleteStaleRecords( Date cutoffDate, int incomingRowsCount, String thresholdStr, Logger log ) throws Exception {
+    public int deleteStaleRecords( Date cutoffDate, int incomingRowsCount, int thresholdPct, Logger log ) throws Exception {
+
+        // incoming-rows = 0 means the pipeline saw no data at all (DB outage, empty source, etc);
+        // skipping stale cleanup avoids wiping the table on a degenerate run
+        if( incomingRowsCount == 0 ) {
+            log.warn("deletion of stale records skipped: incoming rows = 0");
+            return 0;
+        }
 
         String sql = "SELECT ROWID,i.* FROM full_record_index i WHERE last_update_date < ?";
         FullRecordIndexQuery q = new FullRecordIndexQuery(pdao.getDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.TIMESTAMP));
         List<FullRecord> staleRecords = q.execute(cutoffDate);
 
-        int thresholdPct = Integer.parseInt(thresholdStr.replace("%", "").trim());
         int deleteThreshold = (thresholdPct * incomingRowsCount) / 100;
         if( staleRecords.size() > deleteThreshold ) {
-            log.warn("WARN: deletion of stale records aborted");
-            log.warn("      more than "+thresholdStr+" of incoming records were about to be deleted");
-            log.warn("      ("+thresholdStr+" = "+deleteThreshold+",   stale-record-count = "+staleRecords.size()+")");
+            log.warn("deletion of stale records aborted: more than "+thresholdPct+"% of incoming records were about to be deleted");
+            log.warn("  ("+thresholdPct+"% of "+incomingRowsCount+" = "+deleteThreshold+",   stale-record-count = "+staleRecords.size()+")");
             return 0;
         }
         return deleteRecords(staleRecords);

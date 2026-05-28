@@ -29,7 +29,7 @@ public class FullRecordIndex {
     FullRecordIndexDao dao = new FullRecordIndexDao();
 
     private String version;
-    private String staleDeleteThreshold;
+    private int staleDeleteThresholdPct;
 
     public static void main(String[] args) throws Exception {
 
@@ -150,7 +150,7 @@ public class FullRecordIndex {
 
         });
 
-        int staleRowsDeleted = dao.deleteStaleRecords(date0, rowsIncoming.get(), getStaleDeleteThreshold(), log);
+        int staleRowsDeleted = dao.deleteStaleRecords(date0, rowsIncoming.get(), getStaleDeleteThresholdPct(), log);
 
         if( rowsIncoming.get()!=0 ) {
             log.info("   incoming rows:   " + Utils.formatThousands(rowsIncoming));
@@ -204,11 +204,17 @@ public class FullRecordIndex {
         return version;
     }
 
+    /// accepts an integer percentage with optional trailing '%' (e.g. "10" or "10%"); fails fast at config load
     public void setStaleDeleteThreshold(String staleDeleteThreshold) {
-        this.staleDeleteThreshold = staleDeleteThreshold;
+        String trimmed = staleDeleteThreshold.replace("%", "").trim();
+        try {
+            this.staleDeleteThresholdPct = Integer.parseInt(trimmed);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("staleDeleteThreshold must be an integer percent (e.g. '10%'); got '"+staleDeleteThreshold+"'", e);
+        }
     }
 
-    public String getStaleDeleteThreshold() {
-        return staleDeleteThreshold;
+    public int getStaleDeleteThresholdPct() {
+        return staleDeleteThresholdPct;
     }
 }

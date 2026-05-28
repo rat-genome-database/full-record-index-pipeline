@@ -1,3 +1,6 @@
+May 27, 2026
+  hardened stale-record cleanup; staleDeleteThreshold validated at startup; updated dependencies
+
 May 19, 2026
   FullRecord.equals/hashCode: null-safe handling of all string fields; updated dependencies
 
