@@ -65,7 +65,7 @@ public class FullRecordIndexDao {
     }
 
     public List<FullRecord> getFullRecordsForStudy(int studyId) throws Exception {
-        String sql = "SELECT ROWID,i.* FROM full_record_index i WHERE study_id=?";
+        String sql = "SELECT CAST(ctid AS TEXT) AS rowid,i.* FROM full_record_index i WHERE study_id=?";
         FullRecordIndexQuery q = new FullRecordIndexQuery(pdao.getDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.INTEGER));
         List<FullRecord> records = q.execute(studyId);
@@ -74,7 +74,7 @@ public class FullRecordIndexDao {
 
     public int refreshLastUpdateDate( Collection<FullRecord> records ) throws Exception {
 
-        BatchSqlUpdate su = new BatchSqlUpdate(pdao.getDataSource(), "UPDATE full_record_index SET last_update_date=SYSDATE WHERE ROWID=?",
+        BatchSqlUpdate su = new BatchSqlUpdate(pdao.getDataSource(), "UPDATE full_record_index SET last_update_date=LOCALTIMESTAMP(0) WHERE ctid=CAST(? AS TID)",
                 new int[]{Types.VARCHAR});
         su.compile();
 
@@ -86,7 +86,7 @@ public class FullRecordIndexDao {
 
     public void insertRecords(Collection<FullRecord> records) throws Exception {
         String sql = "INSERT INTO full_record_index (experiment_record_id, term_acc, primary_term_acc, aspect, study_id, "+
-                "study_name, experiment_id, experiment_name, last_update_date) VALUES (?,?,?,?,?,?,?,?,SYSDATE)";
+                "study_name, experiment_id, experiment_name, last_update_date) VALUES (?,?,?,?,?,?,?,?,LOCALTIMESTAMP(0))";
 
         BatchSqlUpdate su = new BatchSqlUpdate(pdao.getDataSource(), sql,
                 new int[]{Types.INTEGER, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.INTEGER
@@ -104,7 +104,7 @@ public class FullRecordIndexDao {
 
     public int deleteRecords( Collection<FullRecord> records ) throws Exception {
 
-        BatchSqlUpdate su = new BatchSqlUpdate(pdao.getDataSource(), "DELETE FROM full_record_index WHERE ROWID=?",
+        BatchSqlUpdate su = new BatchSqlUpdate(pdao.getDataSource(), "DELETE FROM full_record_index WHERE ctid=CAST(? AS TID)",
                 new int[]{Types.VARCHAR});
         su.compile();
 
@@ -126,7 +126,7 @@ public class FullRecordIndexDao {
             return 0;
         }
 
-        String sql = "SELECT ROWID,i.* FROM full_record_index i WHERE last_update_date < ?";
+        String sql = "SELECT CAST(ctid AS TEXT) AS rowid,i.* FROM full_record_index i WHERE last_update_date < ?";
         FullRecordIndexQuery q = new FullRecordIndexQuery(pdao.getDataSource(), sql);
         q.declareParameter(new SqlParameter(Types.TIMESTAMP));
         List<FullRecord> staleRecords = q.execute(cutoffDate);
