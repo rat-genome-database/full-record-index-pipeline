@@ -1,3 +1,6 @@
+Nov 18, 2026
+  stale-record cutoff taken from the database clock (was JVM time), so freshly refreshed rows are never treated as stale
+
 May 27, 2026
   hardened stale-record cleanup; staleDeleteThreshold validated at startup; updated dependencies
 
