@@ -1,3 +1,6 @@
+Nov 18, 2026
+  stale-record cutoff taken from the database clock (was JVM time), so freshly refreshed rows are never treated as stale; updated dependencies
+
 Oct 20, 2026
   migrated to postgres; updated dependencies
 

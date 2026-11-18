@@ -48,14 +48,16 @@ public class FullRecordIndex {
 
     public void runPipeline() throws Exception {
 
-        Date date0 = new Date();
-        long time0 = date0.getTime();
+        long time0 = System.currentTimeMillis();
 
         MemoryMonitor memoryMonitor = new MemoryMonitor();
         memoryMonitor.start();
 
         log.info("Starting "+getVersion());
         log.info("   INITIAL_REC_COUNT: "+Utils.formatThousands(dao.getFullRecordCount()));
+
+        // stale-record cutoff taken from the DB clock: rows not refreshed/inserted by this run are older than this
+        Date staleCutoff = dao.getDbTimestamp();
 
         AtomicInteger rowsIncoming = new AtomicInteger(0);
         AtomicInteger rowsUpToDate = new AtomicInteger(0);
@@ -150,7 +152,7 @@ public class FullRecordIndex {
 
         });
 
-        int staleRowsDeleted = dao.deleteStaleRecords(date0, rowsIncoming.get(), getStaleDeleteThresholdPct(), log);
+        int staleRowsDeleted = dao.deleteStaleRecords(staleCutoff,rowsIncoming.get(), getStaleDeleteThresholdPct(), log);
 
         if( rowsIncoming.get()!=0 ) {
             log.info("   incoming rows:   " + Utils.formatThousands(rowsIncoming));

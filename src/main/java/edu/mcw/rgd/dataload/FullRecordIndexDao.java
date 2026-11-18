@@ -10,9 +10,11 @@ import edu.mcw.rgd.datamodel.pheno.Study;
 import edu.mcw.rgd.process.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.object.BatchSqlUpdate;
 
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.*;
 
@@ -138,6 +140,14 @@ public class FullRecordIndexDao {
             return 0;
         }
         return deleteRecords(staleRecords);
+    }
+
+    /// current database time, with the same precision and rounding as the LOCALTIMESTAMP(0) stamped
+    /// into last_update_date on insert/refresh; use it as the stale-record cutoff, so that the cutoff
+    /// and the row stamps come from the same clock (a JVM-side new Date() could be ahead of the DB clock,
+    /// or carry milliseconds that LOCALTIMESTAMP(0) rounds away, making freshly refreshed rows look stale)
+    public Date getDbTimestamp() throws Exception {
+        return new JdbcTemplate(pdao.getDataSource()).queryForObject("SELECT LOCALTIMESTAMP(0)", Timestamp.class);
     }
 
     public int getFullRecordCount() throws Exception {
